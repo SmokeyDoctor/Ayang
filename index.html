@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Our Little Birthday Adventure</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 30%,#4a3a8a,#1c1530);font-family:"Courier New",ui-monospace,monospace;color:#4a2f55}
+body{display:flex;align-items:center;justify-content:center}
+#stage{position:relative;overflow:hidden;background:#000;font-size:10px;touch-action:none}
+canvas#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+button{font-family:inherit;cursor:pointer}
+/* HUD */
+#hud{position:absolute;left:0;right:0;top:0;padding:.8em;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:5}
+.pbox{background:#2b2150;border:.25em solid #9b7be0;box-shadow:0 0 0 .2em #1a1236;color:#fff}
+#hearts{padding:.35em .6em;font-size:1.6em;letter-spacing:.08em;display:inline-block}
+.h{color:#ff4f87}.h.off{color:#4a3f78}
+#count{margin-top:.7em;display:flex;align-items:center;gap:.5em;padding:.3em .7em;font-size:1.35em;font-weight:700;color:#ffd24a;width:fit-content}
+#count canvas{width:1.7em;image-rendering:pixelated}
+.btns{display:flex;gap:.5em;pointer-events:auto}
+.hb{width:3em;height:3em;background:#2b2150;border:.25em solid #9b7be0;color:#fff;font-size:1.3em;font-weight:700;line-height:1;padding:0}
+.hb:active{background:#4a3a8a}
+/* controls */
+#controls{position:absolute;left:0;right:0;bottom:0;padding:1em;display:flex;justify-content:space-between;align-items:flex-end;z-index:5;pointer-events:none}
+.cg{display:flex;gap:.8em;pointer-events:auto}
+.cb{width:4.6em;height:4.6em;background:rgba(185,162,240,.72);border:.25em solid #7a5fc4;color:#2b2150;font-size:2.2em;font-weight:700;line-height:1;padding:0;touch-action:none;box-shadow:0 .2em 0 #5a43a0}
+.cb.act{background:rgba(224,85,138,.85);color:#fff;border-color:#a02f60;box-shadow:0 .2em 0 #7a1f47}
+.cb.small{width:3.6em;height:3.6em;font-size:1.8em;align-self:flex-end;margin-bottom:.3em}
+.cb.pulse{animation:pl .6s infinite alternate;background:rgba(255,210,74,.92);border-color:#c9951a;color:#4a2f55}
+@keyframes pl{to{transform:scale(1.12)}}
+.cb:active{transform:translateY(.15em);box-shadow:none}
+/* moci dialog */
+#moci{position:absolute;left:.8em;right:.8em;top:7.2em;display:none;z-index:6;padding:.7em;gap:.8em;align-items:flex-start;background:rgba(45,34,80,.95);border:.25em solid #9b7be0;color:#e9defc;font-size:1.2em;line-height:1.35;pointer-events:none}
+#moci canvas{flex:none;width:3em;height:3em;image-rendering:pixelated;background:#fff;border:.15em solid #9b7be0}
+#moci b{color:#ff9fc6;display:block;font-size:.85em;letter-spacing:.1em}
+/* modal */
+#modal{position:absolute;inset:0;background:rgba(30,20,60,.5);display:none;align-items:center;justify-content:center;z-index:10;padding:1.4em}
+.card{position:relative;width:100%;max-height:92%;overflow:auto;background:#fdf6ee;border:.35em solid #c9a8f0;box-shadow:0 0 0 .25em #7a5fc4,0 1em 2em rgba(0,0,0,.35);padding:2em 1.4em 1.4em;text-align:center;color:#4a2f55;font-size:1.2em;line-height:1.4}
+.ribbon{display:block;width:fit-content;margin:-.9em auto .7em;background:#e0558a;color:#fff;padding:.3em 1.4em;font-size:.75em;font-weight:700;letter-spacing:.15em;border:.2em solid #a02f60;white-space:nowrap}
+.x{position:absolute;top:.4em;right:.4em;width:2em;height:2em;background:#e8dcf5;border:.15em solid #9b7be0;color:#4a2f55;font-weight:700;padding:0}
+.ttl{font-weight:700;font-size:1.05em;margin:.2em 0 .6em}
+.paper{background:#fffdf8;border:.15em solid #ddd0bf;padding:.9em;text-align:left;font-size:.85em;line-height:1.6;max-height:24em;overflow:auto}
+.paper p{margin:0 0 .8em}.paper p:last-child{margin:0}
+.pbtn{display:inline-block;margin-top:1em;background:#e0558a;color:#fff;border:.2em solid #a02f60;box-shadow:0 .3em 0 #a02f60;padding:.6em 1.2em;font-weight:700;letter-spacing:.06em;font-size:.9em;text-decoration:none}
+.pbtn:active{transform:translateY(.2em);box-shadow:0 .1em 0 #a02f60}
+.pbtn.dis{background:#c7b8d4;border-color:#9a8aa8;box-shadow:0 .3em 0 #9a8aa8;pointer-events:none}
+.pbtn.alt{background:#7a5fc4;border-color:#4a3a8a;box-shadow:0 .3em 0 #4a3a8a}
+.env{font-size:3.4em;line-height:1.2}
+.seal{width:3.4em;height:3.4em;border-radius:50%;background:#e0558a;border:.2em solid #a02f60;color:#fff;font-size:1.6em;margin:.4em 0;animation:pl .7s infinite alternate;padding:0}
+.hint{font-size:.7em;opacity:.7}
+.polaroid{background:#fff;padding:.7em .7em 2em;border:.1em solid #e5dccd;box-shadow:0 .3em .8em rgba(0,0,0,.2);transform:rotate(-1.5deg);display:block;width:86%;margin:0 auto}
+.polaroid canvas{display:block;width:100%;height:20em;object-fit:cover;background:#eee}
+.polaroid img{display:block;width:100%!important;max-width:none;height:20em;object-fit:cover;image-rendering:auto;background:#eee}
+.cap{margin-top:.8em;font-size:.85em}
+.vid{width:100%;background:#1a1236;border:.2em solid #7a5fc4;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;color:#c9a8f0;font-size:.85em;padding:1em}
+audio{width:100%;margin-top:.6em}
+.sp{display:flex;align-items:center;gap:.6em;margin:.8em 0 .2em;background:#f1e8fa;border:.15em solid #c9a8f0;padding:.5em}
+.spb{flex:none;width:2.4em;height:2.4em;background:#e0558a;border:.15em solid #a02f60;color:#fff;font-size:1em;padding:0}
+.spbar{flex:1;height:.8em;background:#fff;border:.15em solid #9b7be0;cursor:pointer}
+.spbar i{display:block;height:100%;width:0;background:#e0558a}
+#sptime{flex:none;font-size:.7em;min-width:6.5em;text-align:right}
+video{width:100%;max-height:22em;background:#000;border:.2em solid #7a5fc4}
+.cass{font-size:3em;color:#e0558a}
+.note{font-size:.8em;opacity:.8}
+.item{display:block;width:100%;text-align:left;background:#fff;border:.15em solid #c9a8f0;padding:.7em;margin:.5em 0;font-size:.8em;color:#4a2f55;line-height:1.45}
+.item.lock{background:#f1e8fa;text-align:center;font-weight:700;color:#7a5fc4}
+.item.done{background:#fff7fb;border-color:#e0558a}
+.stars{font-size:.85em;margin-top:.6em;color:#c9951a;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5em;margin:.7em 0}
+.gi{background:#fff;border:.15em solid #c9a8f0;padding:.5em .2em;font-size:.7em;min-height:5em;color:#4a2f55;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em}
+.gi.l{background:#ece2f8;color:#a08cc8}
+.gi img,.gi canvas{width:100%;height:3.2em;object-fit:cover;background:#eee}
+.gi .ic{font-size:2em;line-height:1}
+.bar{height:1em;background:#e8dcf5;border:.15em solid #9b7be0;margin:.4em 0}
+.bar i{display:block;height:100%;background:#e0558a}
+/* screens */
+.scr{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;padding:1.4em}
+#start .card{padding-top:1.6em;border-color:#e6b6d6;max-width:30em}
+.logo{font-weight:900;color:#e0558a;text-shadow:.08em .08em 0 #7a1f47,-.05em -.05em 0 #ffd24a;line-height:1.05}
+.logo small{display:block;font-size:.7em;color:#7a5fc4;text-shadow:none;letter-spacing:.2em}
+.logo big{display:block;font-size:2em;letter-spacing:.04em}
+.outs{display:flex;gap:.6em;justify-content:center;margin:.6em 0}
+.out{flex:1;background:#e9dcf8;border:.2em solid #d8c8ec;padding:.4em .2em;font-size:.7em;color:#4a2f55;display:flex;flex-direction:column;align-items:center;gap:.3em}
+.out.sel{border-color:#e0558a;background:#fff0f6;box-shadow:0 0 0 .15em #e0558a}
+.out canvas{width:2.6em;image-rendering:pixelated}
+#end{background:#14123a;flex-direction:column;overflow:auto;text-align:center;color:#fff;justify-content:flex-start;padding-top:3em}
+#end h1{font-size:3.4em;margin:.2em 0;letter-spacing:.12em;color:#fff;text-shadow:.06em .06em 0 #e0558a}
+#end .sub{font-size:1.2em;color:#ffb3d1;margin:.3em 0 .8em}
+#end .frame{background:#fffdf8;padding:.6em .6em 1.4em;border:.25em solid #ffd24a;width:88%;max-width:26em;color:#4a2f55;font-size:1.1em}
+#end .frame canvas{width:100%;display:block;aspect-ratio:4/3;object-fit:cover;object-position:center 72%;background:#eee}
+#end .frame img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover;object-position:center 72%}
+.stat{margin:.9em auto;padding:.5em .9em;background:#3a2e7a;border:.2em solid #ffd24a;color:#ffd24a;font-weight:700;font-size:1.05em;width:88%;max-width:28em}
+.erow{display:flex;gap:.6em;justify-content:center;width:88%;max-width:28em;margin:.3em auto}
+.erow .pbtn{flex:1;margin:0;font-size:.95em;padding:.6em .3em}
+.conf{position:absolute;top:-2em;width:.7em;height:.7em;z-index:9;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv" width="180" height="320"></canvas>
+  <div id="hud">
+    <div><div id="hearts" class="pbox"></div><div id="count" class="pbox"><canvas id="cico" width="14" height="12"></canvas><span id="cnum">0/0</span></div></div>
+    <div class="btns"><button class="hb" id="bHelp">?</button><button class="hb" id="bSnd">♪</button><button class="hb" id="bPause">II</button></div>
+  </div>
+  <div id="moci"><canvas id="mav" width="12" height="12"></canvas><div><b id="mname"></b><span id="mtxt"></span></div></div>
+  <div id="controls">
+    <div class="cg"><button class="cb" id="bL">←</button><button class="cb" id="bR">→</button></div>
+    <div class="cg"><button class="cb act small" id="bE">E</button><button class="cb act" id="bJ">↑</button></div>
+  </div>
+  <div id="modal"></div>
+  <div id="start" class="scr"></div>
+  <div id="end" class="scr"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako_inflate.min.js"></script>
+<script>
+(()=>{
+/* ====================================================================
+   EDIT BAGIAN INI untuk mempersonalisasi game.
+   Semua teks yang ada tanda [GANTI] adalah contoh sementara.
+   {her} = nama panggilan dia, {me} = nama panggilan kamu, {moci} = nama maskot
+   ==================================================================== */
+const CONFIG={
+  her:"Ayang",
+  me:"pacar kamu",
+  moci:"Mochi",
+  title:["OUR LITTLE","BIRTHDAY","ADVENTURE"],
+  /* Karakter dia: jilbab hitam, baju panjang (warna dari outfit), rok. */
+  char:{hijab:"#1c1920",hijabLight:"#36313d",skin:"#f4c7a1"},
+  /* Karakter kamu: kemeja putih, celana hitam. Loncat-loncat nunggu di dekat kue, lalu ikut jalan di belakang dia. */
+  meChar:{hair:"#15110f",skin:"#e2a77c",shirt:"#fbfbfb",shirtDark:"#cfd3dd",pants:"#1f1f26",lens:"#cfe4f5"},
+  outfits:[
+    {name:"Bandung",color:"#2b2733",dark:"#141218",skirt:"#f6f3f0",skirtDark:"#d6cfd9"},
+    {name:"Hiking",color:"#3d3a46",dark:"#25222c",skirt:"#4a4652",skirtDark:"#34313b"},
+    {name:"Lavender",color:"#a07fd8",dark:"#7656b0",skirt:"#f6f3f0",skirtDark:"#d6cfd9"}
+  ],
+  mociStart:"Halo {her}! Ada surat dari {me} di peti pertama. Dekati petinya, lalu tekan E.",
+  mociFall:"Gapapa, kita coba sekali lagi, ya!",
+  mociRefill:"{moci} kasih hati baru. Semangat!",
+  mociAllDone:"Semua harta di sini udah kamu temuin. Lanjut ke kanan, ya!",
+  mociMeet:"Eh, {me} ketemu kamu! Sekarang dia ikut jalan bareng kamu, ya.",
+  mociCake:"Ada kue ulang tahun! Deketin kuenya, terus tekan E buat tiup lilin.",
+  mociGate:"Masih ada harta yang belum kamu buka. Balik dulu yuk!",
+  mociTriggers:[
+    {x:5,text:"Halo, aku {moci}! Itu capybara, temen aku. Dia santai banget, jangan diganggu, ya."},
+    {x:19,text:"Hati-hati, ada tebing! Lompat yang semangat, ya."},
+    {x:43,text:"Ada papan kayu melayang. Loncat satu-satu."},
+    {x:70,text:"Naik tangga kayunya... ada yang nunggu di atas."},
+    {x:111,text:"Dua papan lagi. Kamu pasti bisa!"},
+    {x:145,text:"Selamat datang di Bandung, hari itu. Ada 4 foto di sini."},
+    {x:166,text:"Ada tangga kayu lagi. Pelan-pelan aja naiknya."},
+    {x:222,text:"Sedikit lagi. Pohon sakura ada di ujung sana."}
+  ],
+  /* Capybara di arena: x = kolom, orange = pakai jeruk di kepala, sleep = lagi tidur */
+  capys:[{x:7},{x:21,orange:true},{x:52,sleep:true},{x:88,orange:true},{x:121},{x:155,orange:true},{x:194,sleep:true},{x:226},{x:244,orange:true}],
+  /* x = kolom, row = baris permukaan (15 = tanah). Urutan bebas, jumlah bebas selama x/row valid. */
+  chests:[
+    {type:"letter",x:14,row:15,sealed:true,ribbon:"SURAT PERTAMA",title:"Buat {her}, tempatku pulang",
+      body:[
+        "Happy birthday, {her}! Hari ini aku bikin dunia kecil ini cuma buat kamu, tempat semua hal yang aku suka dari kamu bisa dikumpulin satu-satu.",
+        "Makasih udah jadi orang paling sabar dan sayang ke aku, yang udah jadi alasan aku untuk tetep berjuang setiap hari.",
+        "Cari peti-peti lainnya, ya. Masih banyak kejutan di depan. — {me}"
+      ]},
+    {type:"photo",x:30,row:15,src:"assets/foto1.jpg",caption:"Gunung pertama kita, di Garut ⛰"},
+    {type:"photo",x:39,row:15,src:"assets/foto2.jpg",caption:"Pantai pertama kita 🌊"},
+    {type:"song",x:56,row:12,title:"Berapa Kali Kita Akan Saling Memaafkan",artist:"Pamungkas",file:"assets/lagu.mp3",url:"",note:"Lagu kita."},
+    {type:"promise",x:62,row:15,ribbon:"PESAN KEDUA",title:"Harapan buat semua hari kita nanti",
+      items:[
+        "Semoga aku bisa tetep jadi rumah buat kamu, sampai kapan pun.",
+        "Semoga kita ga sering berantem lagi.",
+        "Semoga kita bisa bertahan sampai selamanya."
+      ]},
+    {type:"photo",x:82,row:9,src:"assets/foto3.jpg",caption:"Kita Digunung Dengan Sunrise Terindah Itu ⛰"},
+    {type:"photo",x:100,row:15,src:"assets/foto5.jpg",caption:"Prau, Pos 2 ✌"},
+    {type:"voucher",x:124,row:15,title:"Kupon spesial dari {me}",
+      items:["Makan sushi sepuasnya","Dibeliin es krim apa pun","Satu hari bebas minta ke mana aja (yang logis ya, plis, ay)"]},
+    {type:"photo",x:131,row:12,src:"assets/foto4.jpg",caption:"Logo Aqua Itu"},
+    {type:"letter",x:136,row:15,ribbon:"SURAT KEDUA",title:"Hal-hal kecil yang aku suka",
+      body:[
+        "1. Semua masakan kamu.",
+        "2. Sayangnya kamu ke aku. Aku ga pernah ngerasa disayang kayak gini sebelumnya.",
+        "3. Badan pendek kamu itu."
+      ]},
+    {type:"photo",x:150,row:15,src:"assets/foto6.jpg",caption:"Aku & kamu, Bandung hari itu 💙"},
+    {type:"photo",x:173,row:9,src:"assets/foto7.jpg",caption:"Bandung hari itu ✨"},
+    {type:"photo",x:190,row:15,src:"assets/foto8.jpg",caption:"Bandung hari itu 🌕"},
+    {type:"photo",x:210,row:10,src:"assets/foto9.jpg",caption:"Kamu, Bandung hari itu ☁"},
+    {type:"letter",x:230,row:15,ribbon:"SURAT TERAKHIR",title:"Buat {her}, sekali lagi",
+      body:[
+        "Yee, tamat! Makasih udah mainin game ini.",
+        "Maaf ya, aku cuma bisa bikin segini. Next time aku buatin yang lebih gede.",
+        "Makasih buat semuanya. Semoga semua yang kita harap bisa kecapai ya, sayang.",
+        "Happy birthday, {her}. — {me}"
+      ]}
+  ],
+  ending:{photo:"assets/foto4.jpg",caption:"Aku & kamu ♥",message:"Happy birthday, {her}"}
+};
+/* ==================== batas bagian yang diedit ==================== */
+
+const T=s=>(s||"").replace(/\{her\}/g,CONFIG.her).replace(/\{me\}/g,CONFIG.me).replace(/\{moci\}/g,CONFIG.moci);
+const $=id=>document.getElementById(id);
+const W=180,H=320,TS=16,GY=15,GROUND=GY*TS;
+const stage=$("stage"),cv=$("cv"),ctx=cv.getContext("2d");ctx.imageSmoothingEnabled=false;
+
+/* ---------- layout ---------- */
+function fit(){const iw=innerWidth,ih=innerHeight;let w=Math.min(iw,ih*9/16),h=w*16/9;if(h>ih){h=ih;w=h*9/16}
+  stage.style.width=w+"px";stage.style.height=h+"px";stage.style.fontSize=(w/36)+"px"}
+addEventListener("resize",fit);fit();
+
+/* ---------- helpers ---------- */
+const lerp=(a,b,t)=>a+(b-a)*t;
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hash(a,b){let h=Math.imul(a*374761393+b*668265263,1274126177);h^=h>>>13;return((h>>>0)%1000)/1000}
+function mk(rows,pal){const h=rows.length,w=rows[0].length,c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ch=rows[y][x];if(ch!=="."&&pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}return c}
+function disc(g,cx,cy,r){for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++)if(x*x+y*y<=r*r)g.fillRect(cx+x,cy+y,1,1)}
+
+/* ---------- sprites ---------- */
+const MOCI=[".bb......bb.","bppb....bppb","bbbbbbbbbbbb",".bbbbbbbbbb.",".bkbbbbbbkb.",".bbbmmmmbbb.",".rbmmnnmmbr.","..bbmmmmbb..","..bbbbbbbb..",".bbbmmmmbbb.",".bbbmmmmbbb.","..bb....bb.."];
+const CHEST=["..dddddddddd..",".dbbbbbbbbbbd.","dbbbbbbbbbbbbd","dBBBBBBBBBBBBd","dggggggggggggd","dbbbbbggbbbbbd","dbbbbbggbbbbbd","dbbbbbbbbbbbbd","dbbbbbbbbbbbbd","dBBBBBBBBBBBBd","dBBBBBBBBBBBBd",".dddddddddddd."];
+const HEART=[".rr.rr.","rrrrrrr","rrrrrrr",".rrrrr.","..rrr..","...r..."];
+const CPAL={d:"#3a2018",b:"#b4682f",B:"#8a4a22",g:"#ffd24a"};
+const sprChest=mk(CHEST,CPAL),sprMoci=mk(MOCI,{b:"#d9a876",p:"#f2b8a0",m:"#fbe7cf",k:"#2a1a2e",n:"#3a2418",r:"#ff9fb5"}),sprHeart=mk(HEART,{r:"#ff4f87"});
+const HER={"idle": ["....HHHH....", "..HHHHHHHH..", ".HHHHHHHHHH.", ".HHssssssHH.", ".HHsessesHH.", ".HHpssmspHH.", ".HHHssssHHH.", "..HHHHHHHH..", ".HHLHHHHLHH.", ".HHTTTTTTHH.", ".TTTTTTTTTT.", "TtTTTTTTTTtT", "TtTTTTTTTTtT", "s.TTTTTTTT.s", "..WWWWWWWW..", "..WWWWWWWW..", ".WWWwWWwWWW.", ".WWwWWWWwWW.", "WWWWWWWWWWWW", "...ff..ff..."], "walkA": ["....HHHH....", "..HHHHHHHH..", ".HHHHHHHHHH.", ".HHssssssHH.", ".HHsessesHH.", ".HHpssmspHH.", ".HHHssssHHH.", "..HHHHHHHH..", ".HHLHHHHLHH.", ".HHTTTTTTHH.", ".TTTTTTTTTT.", "TtTTTTTTTTtT", "TtTTTTTTTTtT", "s.TTTTTTTT.s", "..WWWWWWWW..", "..WWWWWWWW..", ".WWWwWWwWWW.", "WWwWWWWwWWW.", "WWWWWWWWWWW.", "..ff....ff.."], "walkB": ["....HHHH....", "..HHHHHHHH..", ".HHHHHHHHHH.", ".HHssssssHH.", ".HHsessesHH.", ".HHpssmspHH.", ".HHHssssHHH.", "..HHHHHHHH..", ".HHLHHHHLHH.", ".HHTTTTTTHH.", ".TTTTTTTTTT.", "TtTTTTTTTTtT", "TtTTTTTTTTtT", "s.TTTTTTTT.s", "..WWWWWWWW..", "..WWWWWWWW..", ".WWWwWWwWWW.", ".WWwWWWWwWWW", "WWWWWWWWWWWW", "....ff.ff..."], "jump": ["....HHHH....", "..HHHHHHHH..", ".HHHHHHHHHH.", ".HHssssssHH.", ".HHsessesHH.", ".HHpssmspHH.", ".HHHssssHHH.", "..HHHHHHHH..", ".HHLHHHHLHH.", ".HHTTTTTTHH.", "sTTTTTTTTTTs", "sTTTTTTTTTTs", ".tTTTTTTTTt.", "..TTTTTTTT..", "..WWWWWWWW..", ".WWWWWWWWWW.", ".WWwWWWWwWW.", "WWWWWWWWWWWW", "WWWWWWWWWWWW", "..ff...ff..."]};
+const ME={"idle": ["...KKKKKK...", "..KKKKKKKK..", ".KKKKKKKKKK.", ".KKsKssKsKK.", "..KssssssK..", "..ssessess..", "...ssssss...", "...sssmss...", "....ssss....", "..CCCssCCC..", ".CCCCCCCCCC.", "CCCCCcCCCCCC", "CcCCCcCCCCcC", "s.CCCcCCCC.s", "..BBBbBBBB..", "..PPPPPPPP..", "..PPP..PPP..", "..PPP..PPP..", "..PPP..PPP..", ".FFFF..FFFF."], "walkA": ["...KKKKKK...", "..KKKKKKKK..", ".KKKKKKKKKK.", ".KKsKssKsKK.", "..KssssssK..", "..ssessess..", "...ssssss...", "...sssmss...", "....ssss....", "..CCCssCCC..", ".CCCCCCCCCC.", "CCCCCcCCCCCC", "CcCCCcCCCCcC", "s.CCCcCCCC.s", "..BBBbBBBB..", "..PPPPPPPP..", ".PPP....PPP.", ".PPP....PPP.", "PPP......PPP", "FFF......FFF"], "walkB": ["...KKKKKK...", "..KKKKKKKK..", ".KKKKKKKKKK.", ".KKsKssKsKK.", "..KssssssK..", "..ssessess..", "...ssssss...", "...sssmss...", "....ssss....", "..CCCssCCC..", ".CCCCCCCCCC.", "CCCCCcCCCCCC", "CcCCCcCCCCcC", "s.CCCcCCCC.s", "..BBBbBBBB..", "..PPPPPPPP..", "...PP..PP...", "...PPPPPP...", "....PPPP....", "...FFFFFF..."], "jump": ["...KKKKKK...", "..KKKKKKKK..", ".KKKKKKKKKK.", ".KKsKssKsKK.", "..KssssssK..", "..ssessess..", "...ssssss...", "...sssmss...", "....ssss....", "..CCCssCCC..", "sCCCCCCCCCCs", "sCCCCcCCCCCs", ".cCCCcCCCCc.", "..CCCcCCCC..", "..BBBbBBBB..", "..PPPPPPPP..", "..PPP..PPP..", ".PPP....PPP.", ".PP......PP.", ".FF......FF."]};
+function frames(src,pal){return{idle:mk(src.idle,pal),walkA:mk(src.walkA,pal),walkB:mk(src.walkB,pal),jump:mk(src.jump,pal)}}
+const outfitCache={};
+function playerSprites(i){if(outfitCache[i])return outfitCache[i];const o=CONFIG.outfits[i],c=CONFIG.char;
+  return outfitCache[i]=frames(HER,{H:c.hijab,L:c.hijabLight,s:c.skin,e:"#2a1a2e",p:"#ff9fb5",m:"#c0485e",T:o.color,t:o.dark,W:o.skirt,w:o.skirtDark,f:"#e8dccf"})}
+const meSpr=(()=>{const c=CONFIG.meChar;return frames(ME,{K:c.hair,e:"#2a1a2e",s:c.skin,G:"#2b2430",g:c.lens,m:"#a0524a",C:c.shirt,c:c.shirtDark,B:"#2a2a2a",b:"#c9a94a",P:c.pants,F:"#3a2a22"})})();
+const CAPY=["....oo..........","...oooo.........","..dbbbbd........",".bbbbbbbbbbbbb..","bbkbbbbbbbbbbbb.","bbbbbbbbbbbbbbbb","nbbbbbbbbbbbbbbb","bbbBbbbbbbbbbbbb",".BBBBBBBBBBBBBB.","..BB..BB..BB.BB.","..dd..dd..dd.dd."];
+const capyPal={b:"#a8744a",B:"#8a5a36",d:"#5e3b22",k:"#1d1410",n:"#3b2418",o:"#ff9a2e"};
+const sprCapyO=mk(CAPY,capyPal),sprCapy=mk(CAPY.map((r,i)=>i<2?"................":r),capyPal),
+  sprCapyZ=mk(CAPY.map((r,i)=>i<2?"................":i===4?r.replace("k","B"):r),capyPal);
+$("cico").getContext("2d").drawImage(sprChest,0,0);
+{const g=$("mav").getContext("2d");g.imageSmoothingEnabled=false;g.fillStyle="#fff";g.fillRect(0,0,12,12);g.drawImage(sprMoci,0,0)}
+$("mname").textContent=T("{moci}").toUpperCase();
+
+/* ---------- pre-rendered scenery ---------- */
+const SUNX=118,SUNY=214,HZ=222;
+const sky=document.createElement("canvas");sky.width=W;sky.height=H;
+{const g=sky.getContext("2d");
+ const st=[[0,[14,8,44]],[70,[40,16,82]],[130,[110,34,110]],[170,[200,62,104]],[200,[250,110,78]],[215,[255,160,80]],[222,[255,206,120]],
+   [223,[150,50,96]],[245,[92,30,88]],[320,[34,12,52]]];
+ for(let y=0;y<H;y++){let i=0;while(i<st.length-2&&y>st[i+1][0])i++;const a=st[i],b=st[i+1],t=Math.min(1,Math.max(0,(y-a[0])/(b[0]-a[0])));
+  g.fillStyle=`rgb(${lerp(a[1][0],b[1][0],t)|0},${lerp(a[1][1],b[1][1],t)|0},${lerp(a[1][2],b[1][2],t)|0})`;g.fillRect(0,y,W,1)}
+ const gl=g.createRadialGradient(SUNX,SUNY,4,SUNX,SUNY,110);gl.addColorStop(0,"rgba(255,220,140,.55)");gl.addColorStop(.4,"rgba(255,120,90,.18)");gl.addColorStop(1,"rgba(255,80,90,0)");
+ g.fillStyle=gl;g.fillRect(0,100,W,HZ-100);
+ const R=30;for(let y=SUNY-R;y<=Math.min(HZ,SUNY+R);y++){const dy=y-SUNY;
+   if(dy>-6&&((dy+40)%7)<Math.max(0,(dy+8)/6))continue;
+   const w=Math.sqrt(R*R-dy*dy)|0,k=(y-(SUNY-R))/(2*R);
+   g.fillStyle=`rgb(255,${lerp(236,120,k)|0},${lerp(150,90,k)|0})`;g.fillRect(SUNX-w,y,w*2,1)}
+}
+const stars=Array.from({length:40},(_,i)=>({x:(hash(i,1)*W)|0,y:(hash(i,2)*120)|0,p:hash(i,3)*6.28,b:hash(i,4)>.8}));
+const birds=Array.from({length:5},(_,i)=>({x:hash(i,8)*W,y:120+hash(i,9)*60,v:.15+hash(i,10)*.15}));
+function ridge(x,k){if(k===0)return 26+13*Math.sin(x*.019+1)+8*Math.sin(x*.047+2)+4*Math.sin(x*.11)+18*Math.max(0,Math.sin(x*.0105))**6;
+  return 10+10*Math.max(0,Math.sin(x*.016))**1.6+6*Math.sin(x*.053+4)+3*Math.sin(x*.19)}
+function drawBackdrop(cam,t){
+  stars.forEach(s=>{const a=.35+.65*Math.abs(Math.sin(t*.0015+s.p));ctx.globalAlpha=a;ctx.fillStyle="#fff";ctx.fillRect(s.x,s.y,1,1);if(s.b&&a>.85){ctx.fillRect(s.x-1,s.y,3,1);ctx.fillRect(s.x,s.y-1,1,3)}});ctx.globalAlpha=1;
+  ctx.save();ctx.translate(SUNX,SUNY);ctx.rotate(t*.00004);ctx.fillStyle="#ffd9a0";
+  for(let i=0;i<10;i++){ctx.globalAlpha=.05+.03*Math.sin(t*.001+i);ctx.beginPath();ctx.moveTo(0,0);const a=i/10*Math.PI*2;ctx.lineTo(Math.cos(a-.07)*260,Math.sin(a-.07)*260);ctx.lineTo(Math.cos(a+.07)*260,Math.sin(a+.07)*260);ctx.fill()}
+  ctx.restore();ctx.globalAlpha=1}
+function drawMountains(cam,t){
+  for(let sx=0;sx<W;sx++){const wx=sx+cam*.05,h=ridge(wx,0)|0;ctx.fillStyle="#6a2f6c";ctx.fillRect(sx,HZ-h,1,h);
+    ctx.fillStyle="#9a4a7a";ctx.fillRect(sx,HZ-h,1,1);if(h>44){ctx.fillStyle="#f0c0c8";ctx.fillRect(sx,HZ-h,1,Math.min(3,h-44))}}
+  for(let sx=0;sx<W;sx++){const wx=sx+cam*.13,h=ridge(wx,1)|0,hl=ridge(wx-1,1)|0;ctx.fillStyle="#3a1748";ctx.fillRect(sx,HZ-h,1,h);
+    ctx.fillStyle=h>hl?"#ff8a6a":"#5a2560";ctx.fillRect(sx,HZ-h,1,1)}
+  for(let y=HZ+2;y<GROUND;y+=2){const k=(y-HZ)/(GROUND-HZ),w=(34-k*14)*(.75+.25*Math.sin(t*.003+y));
+    ctx.fillStyle=`rgba(255,${190-k*60|0},120,${.55-k*.3})`;ctx.fillRect((SUNX-w/2+Math.sin(t*.002+y*.7)*3)|0,y,w|0,1)}
+  birds.forEach(b=>{b.x-=b.v;if(b.x<-6)b.x=W+6;const f=((t>>7)+b.y)%2;ctx.fillStyle="#2a1030";const x=b.x|0,y=b.y|0;
+    ctx.fillRect(x,y,1,1);ctx.fillRect(x-1,y-f,1,1);ctx.fillRect(x+1,y-f,1,1);ctx.fillRect(x-2,y-1+f,1,1);ctx.fillRect(x+2,y-1+f,1,1)})}
+function makeCloud(w,seed){const c=document.createElement("canvas");c.width=w;c.height=16;const g=c.getContext("2d");const r=rng(seed);
+ g.fillStyle="#7a3a82";for(let i=0;i<5;i++){disc(g,6+i*(w-12)/4,12-(i%2)*2,4+(i%3))}g.fillRect(2,11,w-4,4);
+ g.fillStyle="#d86a8e";for(let i=0;i<5;i++){disc(g,6+i*(w-12)/4,10-(i%2)*2,4+(i%3))}g.fillRect(2,9,w-4,4);
+ g.fillStyle="#ffb08a";for(let i=0;i<5;i++){g.fillRect(6+i*(w-12)/4-2|0,(10-(i%2)*2)-4-(i%3)|0,4,1)}return c}
+const clouds=[makeCloud(34,1),makeCloud(26,2),makeCloud(40,3),makeCloud(22,4)];
+function makeTree(w,h,n,seed){const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");const r=rng(seed),cx=w/2;
+ for(let y=h-1;y>h*.42;y--){const k=(y-h*.42)/(h*.58),tw=Math.max(2,Math.round(lerp(3,w*.07,k))),x=Math.round(cx+Math.sin(y*.09)*w*.025);
+  g.fillStyle="#6b3f36";g.fillRect(x-tw/2|0,y,tw,1);g.fillStyle="#4b2a2c";g.fillRect((x+tw/2|0)-1,y,1,1)}
+ const cols=["#ffb7d5","#ff8fbd","#ffd1e4","#f56ea5","#ffc2dc"];
+ for(let i=0;i<n;i++){const a=r()*Math.PI*2,d=Math.sqrt(r());const x=cx+Math.cos(a)*d*w*.42,y=h*.3+Math.sin(a)*d*h*.26,rad=(w*.06+r()*w*.07)|0;
+  g.fillStyle=cols[(r()*cols.length)|0];disc(g,x|0,y|0,Math.max(2,rad))}
+ g.fillStyle="#e2578f";for(let i=0;i<n*.9;i++){g.fillRect((cx+(r()-.5)*w*.85)|0,(h*.3+(r()-.2)*h*.5)|0,1,1)}
+ g.fillStyle="#fff2f8";for(let i=0;i<n*.8;i++){g.fillRect((cx+(r()-.5)*w*.85)|0,(h*.12+r()*h*.35)|0,1,1)}return c}
+const bigTree=makeTree(130,150,70,11),smallTrees=[makeTree(46,62,16,21),makeTree(40,54,13,22),makeTree(52,68,18,23)];
+
+/* ---------- level ---------- */
+const segs=[[0,24],[27,44],[49,66],[69,90],[93,112],[118,140],[143,160],[163,178],[183,197],[200,218],[221,255]];
+const plats=[{x:45,r:13,w:2},{x:55,r:12,w:3},{x:73,r:13,w:2},{x:77,r:11,w:2},{x:81,r:9,w:3},{x:113,r:13,w:2},{x:116,r:12,w:2},{x:130,r:12,w:3},{x:168,r:12,w:3},{x:172,r:9,w:3},{x:179,r:13,w:2},{x:205,r:12,w:3},{x:209,r:10,w:3}];
+const WORLD=255*TS;
+const surfaces=[];segs.forEach(s=>surfaces.push({x1:s[0]*TS,x2:s[1]*TS,y:GROUND,ground:true}));
+plats.forEach(p=>surfaces.push({x1:p.x*TS,x2:(p.x+p.w)*TS,y:p.r*TS}));
+const decorTrees=[[10,0],[33,1],[58,2],[86,0],[104,1],[127,2],[148,1],[176,0],[193,2],[214,1],[228,0]];
+const lamps=[5,40,100,150,165,186,203,231];
+const ARCH=250*TS,TREEX=240*TS,CAKEX=237*TS;
+
+/* ---------- state ---------- */
+let state="menu",paused=false,modalOpen=false,outfit=0,hearts=5,collected=0,playTime=0,gateCd=0;
+const keys={l:0,r:0,j:0};
+let player,chests,fired,lastSafe,invul=0,boy,trail=[],cakeBlown=false;
+function resetGame(){
+  player={x:2*TS,y:GROUND-20,w:8,h:20,vx:0,vy:0,face:1,onGround:true,coyote:0,buf:0,anim:0};
+  lastSafe={x:player.x,y:player.y};
+  chests=CONFIG.chests.map(c=>Object.assign({},c,{opened:false,unsealed:false,rev:[],px:c.x*TS+1,py:c.row*TS,t:0}));
+  fired={};hearts=5;collected=0;playTime=0;invul=0;cakeBlown=false;trail=[];
+  boy={x:CAKEX+26,y:GROUND-20,vy:0,follow:false,face:-1,anim:0,hop:0};updHud();
+}
+const SKEY="bday-adv-save-v1";
+function saveProg(){try{localStorage.setItem(SKEY,JSON.stringify({o:outfit,c:chests.map(c=>[c.opened?1:0,c.unsealed?1:0,c.rev]),f:fired,t:playTime,x:lastSafe.x,y:lastSafe.y,h:hearts,b:boy.follow?1:0,k:cakeBlown?1:0}))}catch(e){}}
+function loadProg(){try{const d=JSON.parse(localStorage.getItem(SKEY)||"null");if(!d||!d.c||d.c.length!==CONFIG.chests.length)return null;return d}catch(e){return null}}
+function clearProg(){try{localStorage.removeItem(SKEY)}catch(e){}}
+function applyProg(d){outfit=d.o||0;d.c.forEach((v,i)=>{chests[i].opened=!!v[0];chests[i].unsealed=!!v[1];chests[i].rev=v[2]||[]});
+  collected=chests.filter(c=>c.opened).length;fired=d.f||{};cakeBlown=!!d.k;if(d.b){boy.follow=true;boy.x=d.x;boy.y=d.y}playTime=d.t||0;hearts=d.h||5;
+  if(typeof d.x==="number"){player.x=d.x;player.y=d.y;lastSafe={x:d.x,y:d.y}}updHud()}
+function updHud(){$("hearts").innerHTML=Array.from({length:5},(_,i)=>`<span class="h ${i<hearts?"":"off"}">♥</span>`).join("");
+  $("cnum").textContent=collected+"/"+(chests?chests.length:CONFIG.chests.length)}
+
+/* ---------- audio ---------- */
+let actx=null,soundOn=true,musicTimer=null,step=0;
+function initAudio(){if(actx)return;try{actx=new(window.AudioContext||window.webkitAudioContext)();startMusic()}catch(e){actx=null}}
+function tone(f,d,type,vol,slide,delay){if(!actx||!soundOn)return;try{const t=actx.currentTime+(delay||0),o=actx.createOscillator(),g=actx.createGain();o.type=type||"square";
+  o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),t+d);
+  g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d+.03)}catch(e){}}
+const sfx={jump:()=>tone(330,.14,"square",.04,300),hurt:()=>tone(220,.3,"sawtooth",.05,-130),
+ chest:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.16,"square",.045,0,i*.08)),
+ win:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.22,"square",.045,0,i*.11)),tap:()=>tone(880,.06,"square",.03)};
+const MEL=[523,0,659,0,784,659,0,587,523,0,659,0,880,784,0,659,698,0,880,0,784,698,0,659,587,659,523,0,0,0,0,0];
+const BAS=[131,131,131,131,131,131,131,131,175,175,175,175,196,196,196,196];
+function startMusic(){if(musicTimer)return;musicTimer=setInterval(()=>{const sa=document.getElementById("song");if(!actx||!soundOn||paused||state==="end"||song.playing)return;
+  const m=MEL[step%MEL.length];if(m)tone(m,.22,"triangle",.035);if(step%2===0)tone(BAS[(step>>1)%BAS.length],.4,"sine",.04);step++},260)}
+$("bSnd").onclick=()=>{soundOn=!soundOn;if(!soundOn)songPause();$("bSnd").textContent=soundOn?"♪":"×";initAudio()};
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="play")pauseGame(true)});
+
+/* ---------- foto & lagu: didecode di JS (createImageBitmap / WebAudio), jadi tidak tergantung izin <img>/<audio> ---------- */
+const B64L=new Uint8Array(128);"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("").forEach((ch,i)=>B64L[ch.charCodeAt(0)]=i);
+function b64bytes(d){const s=d.slice(d.indexOf(",")+1);let n=s.length;while(n&&s.charCodeAt(n-1)===61)n--;
+  const out=new Uint8Array((n*3)>>2);let o=0;
+  for(let i=0;i<n;i+=4){const v=(B64L[s.charCodeAt(i)]<<18)|(B64L[s.charCodeAt(i+1)]<<12)|((B64L[s.charCodeAt(i+2)]|0)<<6)|(B64L[s.charCodeAt(i+3)]|0);
+    if(o<out.length)out[o++]=v>>16&255;if(o<out.length)out[o++]=v>>8&255;if(o<out.length)out[o++]=v&255}return out}
+function inflate(u){if(window.pako)return Promise.resolve(window.pako.inflate(u));
+  if(window.DecompressionStream)return new Response(new Response(u).body.pipeThrough(new DecompressionStream("deflate"))).arrayBuffer().then(b=>new Uint8Array(b));
+  return Promise.reject(new Error("tidak bisa dekompres"))}
+/* foto "raw:W:H,<base64 zlib RGB>": digambar langsung piksel per piksel, tanpa <img>/Blob */
+const photoCache=new Map(),phReg=[];
+function getPhoto(src){if(!photoCache.has(src)){let pr;
+  if(src.startsWith("raw:")){const [w,h]=src.slice(4,src.indexOf(",")).split(":").map(Number);
+    pr=inflate(b64bytes(src)).then(rgb=>{const id=new ImageData(w,h),d=id.data;for(let i=0,j=0;i<w*h;i++,j+=3){d[i*4]=rgb[j];d[i*4+1]=rgb[j+1];d[i*4+2]=rgb[j+2];d[i*4+3]=255}return id})}
+  else pr=new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.width;c.height=im.height;const g=c.getContext("2d");g.drawImage(im,0,0);res(g.getImageData(0,0,c.width,c.height))};im.onerror=rej;im.src=src});
+  photoCache.set(src,pr)}return photoCache.get(src)}
+function regPh(src){let i=phReg.indexOf(src);if(i<0){phReg.push(src);i=phReg.length-1}return i}
+function hydrate(root){root.querySelectorAll("canvas[data-ph]").forEach(c=>{if(c.dataset.done)return;c.dataset.done=1;
+  getPhoto(phReg[+c.dataset.ph]).then(id=>{c.width=id.width;c.height=id.height;c.getContext("2d").putImageData(id,0,0)}).catch(e=>{c.width=300;c.height=60;const g=c.getContext("2d");g.fillStyle="#a02f60";g.font="12px monospace";g.fillText("foto gagal: "+((e&&e.message)||e),6,30)})})}
+new MutationObserver(()=>hydrate(stage)).observe(stage,{childList:true,subtree:true});
+const song={buf:null,loading:null,file:null,start:0,off:0,playing:false,node:null,gain:null};
+function songPos(){return song.playing?actx.currentTime-song.start:song.off}
+function songLoad(file){if(song.loading&&song.file===file)return song.loading;song.file=file;
+  song.loading=(file.startsWith("data:")?Promise.resolve(b64bytes(file).buffer):fetch(file).then(r=>{if(!r.ok)throw new Error("file lagu tidak ditemukan");return r.arrayBuffer()})).then(ab=>new Promise((res,rej)=>{const r=actx.decodeAudioData(ab,res,rej);if(r&&r.catch)r.catch(rej)})).then(buf=>{song.buf=buf;return buf});return song.loading}
+function songPlay(){if(!actx||!song.buf||song.playing)return;if(actx.resume)actx.resume();
+  if(!song.gain){song.gain=actx.createGain();song.gain.gain.value=.9;song.gain.connect(actx.destination)}
+  if(song.off>=song.buf.duration-.2)song.off=0;const n=actx.createBufferSource();n.buffer=song.buf;n.connect(song.gain);n.start(0,song.off);
+  song.start=actx.currentTime-song.off;song.node=n;song.playing=true;
+  n.onended=()=>{if(song.node===n){song.node=null;song.playing=false;song.off=0;updSongUI()}}}
+function songPause(){if(!song.playing)return;song.off=songPos();const n=song.node;song.node=null;song.playing=false;try{n.stop()}catch(e){}}
+function fmt(x){x=Math.max(0,x|0);return (x/60|0)+":"+String(x%60).padStart(2,"0")}
+function updSongUI(){const b=document.getElementById("spbtn");if(!b)return;b.textContent=song.playing?"❚❚":"▶";
+  if(song.buf){$("sptime").textContent=fmt(songPos())+" / "+fmt(song.buf.duration);$("spfill").style.width=(songPos()/song.buf.duration*100)+"%"}}
+setInterval(updSongUI,300);
+function startSong(file){if(!actx){$("sptime").textContent="audio tidak didukung";return}
+  songLoad(file).then(()=>{if(!song.playing&&soundOn)songPlay();updSongUI()}).catch(e=>{song.loading=null;const t=document.getElementById("sptime");if(t)t.textContent="gagal: "+((e&&e.message)||e)})}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)songPause()});
+
+/* ---------- moci ---------- */
+let mt=null;
+function say(t,ms){$("moci").style.display="flex";$("mtxt").textContent=T(t);clearTimeout(mt);mt=setTimeout(()=>$("moci").style.display="none",ms||5200)}
+
+/* ---------- modal ---------- */
+let modalAfter=null;
+function card(rib,inner){return `<div class="card">${rib?`<div class="ribbon">${T(rib)}</div>`:""}<button class="x" data-act="close">X</button>${inner}</div>`}
+const phCache={};
+function ph(label){if(phCache[label])return phCache[label];const c=document.createElement("canvas");c.width=160;c.height=120;const g=c.getContext("2d");
+ const gr=g.createLinearGradient(0,0,0,120);gr.addColorStop(0,"#9fb2f7");gr.addColorStop(.6,"#ffc9d9");gr.addColorStop(1,"#ffe0b8");g.fillStyle=gr;g.fillRect(0,0,160,120);
+ g.fillStyle="#ff4f87";g.imageSmoothingEnabled=false;g.drawImage(sprHeart,64,30,32,30);
+ g.fillStyle="#fff";g.font="bold 11px monospace";g.textAlign="center";g.fillText(label,80,88);g.font="9px monospace";g.fillText("(foto belum dipasang)",80,102);
+ return phCache[label]=c.toDataURL()}
+function chestIndex(c){return chests.indexOf(c)}
+function buildModal(c){
+  switch(c.type){
+  case"letter":
+    if(c.sealed&&!c.unsealed)return card(c.ribbon,`<div class="env">✉</div><p>Ada surat dari ${T("{me}")}, khusus buat kamu.</p><button class="seal" data-act="unseal">♥</button><div class="hint">Ketuk segel hatinya</div>`);
+    return card(c.ribbon||"SURAT",`<div class="ttl">${T(c.title)}</div><div class="paper">${c.body.map(p=>`<p>${T(p)}</p>`).join("")}</div><button class="pbtn" data-act="close">Selesai membaca</button>`);
+  case"photo":{const real=!!c.src,src=real?c.src:ph("FOTO KITA #"+(chestIndex(c)+1));
+    return card("FOTO",`<div class="polaroid"><canvas data-ph="${regPh(src)}"></canvas></div><div class="cap">${T(c.caption)}</div><button class="pbtn" data-act="close">Simpan di hati</button>`)}
+  case"song":
+    return card("LAGU",`<div class="cass">♪</div><div class="ttl">${T(c.title)}</div><div>${T(c.artist)}</div><p class="note">${T(c.note)}</p>${c.file?`<div class="sp"><button class="spb" id="spbtn" data-act="songtoggle">▶</button><div class="spbar" id="spbar"><i id="spfill"></i></div><span id="sptime">memuat lagu…</span></div>`:(c.url?`<a class="pbtn" href="${c.url}" target="_blank" rel="noopener">Putar lagu</a>`:`<div class="pbtn dis">Lagu belum dipasang</div>`)}<br><button class="pbtn alt" data-act="close">Tutup</button>`);
+  case"video":
+    return card("VIDEO",`<div class="ttl">Satu video lagi</div>${c.src?`<video src="${c.src}" controls playsinline preload="metadata"></video>`:`<div class="vid">Video belum dipasang</div>`}<p class="note">${T(c.caption)}</p><button class="pbtn" data-act="close">Buka perjalanan</button>`);
+  case"promise":{const n=c.items.length,r=c.rev.filter(Boolean).length;
+    return card(c.ribbon,`<div class="ttl">${T(c.title)}</div><div class="note">Buka satu-satu, ya. Semua harapan ini buat kamu.</div>`+
+      c.items.map((t,i)=>c.rev[i]?`<div class="item done">★ ${T(t)}</div>`:`<button class="item lock" data-act="rev" data-i="${i}">Buka harapan ${i+1}</button>`).join("")+
+      `<div class="stars">${"★".repeat(r)}${"☆".repeat(n-r)} ${r}/${n} bintang menyala</div><button class="pbtn ${r<n?"dis":""}" data-act="close">Simpan semua harapan</button>`)}
+  case"voucher":
+    return card("KUPON",`<div class="ttl">${T(c.title)}</div><div class="note">Ketuk untuk klaim. Berlaku kapan aja.</div>`+
+      c.items.map((t,i)=>c.rev[i]?`<div class="item done">✔ DIKLAIM: ${T(t)}</div>`:`<button class="item lock" data-act="rev" data-i="${i}">🎟 ${T(t)}</button>`).join("")+
+      `<button class="pbtn" data-act="close">Tutup</button>`);
+  }
+  return card("",`<p>?</p>`)}
+const ICON={letter:"✉",photo:"▣",song:"♪",video:"▶",promise:"★",voucher:"🎟"};
+const LBL={letter:"Surat",photo:"Foto",song:"Lagu",video:"Video",promise:"Harapan",voucher:"Kupon"};
+let curChest=null;
+function openModal(html,after){$("moci").style.display="none";$("modal").innerHTML=html;$("modal").style.display="flex";modalOpen=true;modalAfter=after||null;keys.l=keys.r=keys.j=0;if(window._relBtns)window._relBtns()}
+function closeModal(){if(state==="play"&&chests)saveProg();const v=$("modal").querySelector("video");if(v)v.pause();$("modal").style.display="none";$("modal").innerHTML="";modalOpen=false;curChest=null;paused=false;const a=modalAfter;modalAfter=null;if(a)a()}
+function showChest(c,after){curChest=c;openModal(buildModal(c),after);if(c.type==="song"&&c.file){initAudio();startSong(c.file)}}
+$("modal").addEventListener("click",e=>{
+  const bar=e.target.closest("#spbar");if(bar&&song.buf){const r=bar.getBoundingClientRect(),k=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));const was=song.playing;songPause();song.off=k*song.buf.duration;if(was)songPlay();updSongUI();return}
+  const b=e.target.closest("[data-act]");if(!b){return}
+  const a=b.dataset.act;sfx.tap();
+  if(a==="close"){if(b.classList.contains("dis"))return;closeModal()}
+  else if(a==="unseal"&&curChest){curChest.unsealed=true;sfx.chest();$("modal").innerHTML=buildModal(curChest)}
+  else if(a==="rev"&&curChest){curChest.rev[+b.dataset.i]=true;sfx.chest();$("modal").innerHTML=buildModal(curChest)}
+  else if(a==="reopen"){const c=chests[+b.dataset.i];closeModal();showChest(c)}
+  else if(a==="blow"){cakeBlown=true;sfx.win();$("modal").innerHTML=cakeCard();burst($("modal"));saveProg()}
+  else if(a==="songtoggle"){initAudio();if(song.playing)songPause();else if(song.buf)songPlay();updSongUI()}
+  else if(a==="journal"){showJournal()}
+  else if(a==="resume"){closeModal()}
+  else if(a==="restart"){closeModal();clearProg();startGame(true)}
+  else if(a==="credit"){openModal(card("KREDIT",`<div class="env">♥</div><p>Dibuat dengan cinta oleh ${T("{me}")}<br>khusus buat ${T("{her}")}.</p><button class="pbtn" data-act="close">Tutup</button>`))}
+  else if(a==="menu"){closeModal();showStart()}
+});
+function showJournal(){const done=chests.filter(c=>c.opened).length;
+  openModal(card("BUKU PERJALANAN",`<div class="note">${done}/${chests.length} harta terkumpul</div><div class="bar"><i style="width:${done/chests.length*100}%"></i></div><div class="grid">`+
+   chests.map((c,i)=>c.opened?`<button class="gi" data-act="reopen" data-i="${i}">${c.type==="photo"?`<canvas data-ph="${regPh(c.src||ph("FOTO KITA #"+(i+1)))}"></canvas>`:`<span class="ic">${ICON[c.type]}</span>`}<span>${LBL[c.type]}</span></button>`:`<div class="gi l"><span class="ic">?</span><span>Terkunci</span></div>`).join("")+`</div><button class="pbtn" data-act="close">Tutup</button>`))}
+function pauseGame(){if(modalOpen||state!=="play")return;paused=true;
+  openModal(card("JEDA",`<div class="env">II</div><button class="pbtn" data-act="resume">Lanjut main</button><br><button class="pbtn alt" data-act="journal">Buku perjalanan</button><br><button class="pbtn alt" data-act="restart">Ulang dari awal</button>`))}
+$("bPause").onclick=()=>{initAudio();pauseGame()};
+$("bHelp").onclick=()=>{if(modalOpen)return;if(state==="play")paused=true;openModal(card("CARA MAIN",`<div class="paper"><p>← → untuk jalan.<br>↑ untuk lompat (tahan = lompat lebih tinggi).<br>E untuk buka peti kalau udah dekat. Tombol E akan menyala kuning.</p><p>Kumpulkan semua peti, lalu jalan ke gerbang bunga di ujung kanan. Kalau jatuh ke laut, gapapa, kamu mulai lagi dari tempat aman.</p><p>Keyboard: panah atau A/D, spasi/W untuk lompat, E untuk buka.</p></div><button class="pbtn" data-act="close">Oke!</button>`))};
+
+/* ---------- screens ---------- */
+function showStart(){state="menu";$("end").style.display="none";$("moci").style.display="none";
+  const s=$("start");s.style.display="flex";
+  s.innerHTML=`<div class="card"><div class="logo"><small>${CONFIG.title[0]}</small><big>${CONFIG.title[1]}</big><small>${CONFIG.title[2]}</small></div><p class="note" style="margin:.8em 0 .2em">PILIH OUTFIT ${T("{her}").toUpperCase()}</p><div class="outs">${CONFIG.outfits.map((o,i)=>`<button class="out ${i===outfit?"sel":""}" data-o="${i}"><canvas width="12" height="20"></canvas>${o.name}</button>`).join("")}</div>${loadProg()?`<button class="pbtn" id="cont">LANJUTKAN</button><br><button class="pbtn alt" id="go">MULAI BARU</button>`:`<button class="pbtn" id="go">MULAI</button>`}<div class="hint" style="margin-top:1em">dibuat dengan ♥ oleh ${T("{me}")}</div></div>`;
+  s.querySelectorAll(".out").forEach((b,i)=>{const g=b.querySelector("canvas").getContext("2d");g.drawImage(playerSprites(i).idle,0,0);
+    b.onclick=()=>{outfit=i;s.querySelectorAll(".out").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");sfx.tap()}});
+  $("go").onclick=()=>{initAudio();clearProg();startGame()};
+  if($("cont"))$("cont").onclick=()=>{initAudio();const d=loadProg();startGame();if(d){applyProg(d);say("Selamat datang lagi, {her}! Kita lanjut dari tadi, ya.",4000)}};resetGame()}
+function startGame(keepScreen){$("start").style.display="none";$("end").style.display="none";resetGame();state="play";paused=false;sfx.chest();say(CONFIG.mociStart,6500)}
+function endGame(){state="end";clearProg();sfx.win();$("moci").style.display="none";const e=$("end");e.style.display="flex";
+  const m=Math.floor(playTime/60),s=Math.floor(playTime%60),tm=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  const src=CONFIG.ending.photo||ph("KITA BERDUA");
+  e.innerHTML=`<h1>THE&nbsp;END</h1><div style="color:#ff4f87;font-size:2em">♥</div><div class="sub">${T(CONFIG.ending.message)}</div><div class="frame"><canvas data-ph="${regPh(src)}"></canvas><div class="cap">${T(CONFIG.ending.caption)}</div></div><div class="stat">${collected}/${chests.length} harta · waktu bermain ${tm}</div><div class="erow"><button class="pbtn" id="eRe">REPLAY</button><button class="pbtn alt" id="eNew">NEW GAME</button></div><div class="erow"><button class="pbtn alt" id="eJ">BUKU PERJALANAN</button><button class="pbtn alt" id="eK">KREDIT</button></div>`;
+  $("eRe").onclick=()=>startGame();$("eNew").onclick=()=>showStart();$("eJ").onclick=()=>showJournal();$("eK").onclick=()=>openModal(card("KREDIT",`<div class="env">♥</div><p>Dibuat dengan cinta oleh ${T("{me}")}<br>khusus buat ${T("{her}")}.</p><button class="pbtn" data-act="close">Tutup</button>`));
+  burst(e)}
+function burst(e){const cols=["#ff4f87","#ffd24a","#7ec8ff","#b58cf0","#ffab91","#fff"];
+  for(let i=0;i<46;i++){const d=document.createElement("div");d.className="conf";d.style.left=(Math.random()*100)+"%";d.style.background=cols[i%cols.length];
+    d.style.animationDuration=(3+Math.random()*3)+"s";d.style.animationDelay=(Math.random()*2)+"s";e.appendChild(d);setTimeout(()=>d.remove(),8000)}}
+
+/* ---------- input ---------- */
+function bindHold(id,k){const b=$(id);let held=false;
+  const down=e=>{e.preventDefault();initAudio();held=true;keys[k]=1;if(k==="j")player.buf=8};
+  const up=e=>{e.preventDefault();held=false;keys[k]=0};
+  b.addEventListener("pointerdown",down);["pointerup","pointercancel","pointerleave"].forEach(t=>b.addEventListener(t,up));
+  b.addEventListener("contextmenu",e=>e.preventDefault())}
+bindHold("bL","l");bindHold("bR","r");bindHold("bJ","j");
+window._relBtns=()=>{};
+$("bE").addEventListener("pointerdown",e=>{e.preventDefault();initAudio();interact()});
+addEventListener("keydown",e=>{if(e.repeat)return;const k=e.key;
+  if(modalOpen){if(k==="Escape")closeModal();return}
+  if(k==="ArrowLeft"||k==="a"||k==="A")keys.l=1;
+  else if(k==="ArrowRight"||k==="d"||k==="D")keys.r=1;
+  else if(k==="ArrowUp"||k==="w"||k==="W"||k===" "){keys.j=1;if(player)player.buf=8;e.preventDefault()}
+  else if(k==="e"||k==="E"||k==="Enter")interact();
+  else if(k==="p"||k==="Escape")pauseGame()});
+addEventListener("keyup",e=>{const k=e.key;
+  if(k==="ArrowLeft"||k==="a"||k==="A")keys.l=0;
+  else if(k==="ArrowRight"||k==="d"||k==="D")keys.r=0;
+  else if(k==="ArrowUp"||k==="w"||k==="W"||k===" ")keys.j=0});
+
+function nearChest(){if(!player)return null;const cx=player.x+player.w/2,cy=player.y+player.h/2;
+  return chests.find(c=>Math.abs(c.px+7-cx)<26&&Math.abs(c.py-6-cy)<20)||null}
+function nearCake(){return !!player&&Math.abs(player.x+player.w/2-(CAKEX+8))<22&&player.y+player.h>GROUND-4}
+function cakeCard(){return cakeBlown?card("YEAY!",`<div class="env">🎂</div><div class="ttl">Lilinnya udah ditiup!</div><p>Semoga semua yang kamu harapkan terkabul, ${T("{her}")}.</p><button class="pbtn" data-act="close">Aamiin</button>`)
+  :card("TIUP LILIN",`<div class="env">🎂</div><div class="ttl">Happy birthday, ${T("{her}")}!</div><p>Pejamkan mata, make a wish dulu.<br>Kalau udah, tiup lilinnya.</p><button class="seal" data-act="blow">💨</button><div class="hint">Ketuk untuk tiup</div>`)}
+function interact(){if(state!=="play"||modalOpen||paused)return;const c=nearChest();
+  if(!c){if(nearCake())openModal(cakeCard());return}
+  if(!c.opened){c.opened=true;c.t=0;collected++;updHud();sfx.chest();
+    showChest(c,()=>{if(collected===chests.length)say(CONFIG.mociAllDone,6000)})}
+  else showChest(c)}
+
+/* ---------- physics ---------- */
+const SPEED=1.8,JV=6.5,G=.34;
+function update(){const p=player;
+  const ax=(keys.r?1:0)-(keys.l?1:0);
+  p.vx+=(ax*SPEED-p.vx)*.4;if(ax)p.face=ax;
+  p.coyote=p.onGround?6:p.coyote-1;p.buf--;
+  if(p.buf>0&&p.coyote>0){p.vy=-JV;p.buf=0;p.coyote=0;p.onGround=false;sfx.jump()}
+  if(!keys.j&&p.vy<-3.6)p.vy=-3.6;
+  const prevBottom=p.y+p.h;
+  p.x+=p.vx;p.x=Math.max(0,Math.min(WORLD-p.w,p.x));
+  p.vy=Math.min(7,p.vy+G);p.y+=p.vy;p.onGround=false;
+  if(p.vy>=0){for(const s of surfaces){
+    if(p.x+p.w>s.x1+1&&p.x<s.x2-1&&prevBottom<=s.y+.01&&p.y+p.h>=s.y){p.y=s.y-p.h;p.vy=0;p.onGround=true;
+      if(p.x>s.x1+10&&p.x+p.w<s.x2-10)lastSafe={x:p.x,y:p.y};break}}}
+  p.anim=(p.onGround&&Math.abs(p.vx)>.4)?p.anim+.2:0;
+  if(invul>0)invul--;
+  if(p.y>H+24){hearts--;sfx.hurt();
+    if(hearts<=0){hearts=5;say(CONFIG.mociRefill,4200)}else say(CONFIG.mociFall,3800);
+    updHud();p.x=lastSafe.x;p.y=lastSafe.y;p.vx=0;p.vy=0;invul=60;trail=[];if(boy.follow){boy.x=p.x-p.face*14;boy.y=p.y}}
+  CONFIG.mociTriggers.forEach((t,i)=>{if(!fired[i]&&p.x>t.x*TS){fired[i]=1;say(t.text)}});
+  if(p.x+p.w/2>ARCH-10&&gateCd<=0){
+    if(collected>=chests.length)endGame();
+    else{say(CONFIG.mociGate,4500);p.x=ARCH-70;p.vx=0;gateCd=120;trail=[];if(boy.follow){boy.x=p.x-14;boy.y=p.y}}}
+  if(gateCd>0)gateCd--;
+  const near=nearChest();$("bE").classList.toggle("pulse",!!near||(nearCake()&&!cakeBlown));
+  if(!fired.cake&&p.x>CAKEX-90){fired.cake=1;if(!cakeBlown)say(CONFIG.mociCake,5000)}
+  updBoy(p);
+}
+/* cowok: loncat-loncat nunggu, lalu ikut jalan di belakang cewek */
+function updBoy(p){const b=boy;
+  if(!b.follow){b.hop=b.hop>0?b.hop-1:0;
+    if(b.y>=GROUND-20&&b.vy>=0&&Math.random()<.025){b.vy=-3.2}
+    b.vy+=G;b.y+=b.vy;if(b.y>=GROUND-20){b.y=GROUND-20;b.vy=0}
+    b.face=p.x<b.x?-1:1;
+    if(Math.abs(p.x-b.x)<14&&Math.abs(p.y-(GROUND-20))<8){b.follow=true;trail=[];say(CONFIG.mociMeet,4500);sfx.chest()}
+    return}
+  trail.push({x:p.x,y:p.y,g:p.onGround});if(trail.length>200)trail.shift();
+  const back=Math.abs(p.vx)>.4||!p.onGround?16:0;const tg=trail[Math.max(0,trail.length-1-back)];
+  const dx=tg.x-p.face*14-b.x;
+  b.anim=Math.abs(dx)>.5?b.anim+.2:0;if(Math.abs(dx)>.3)b.face=dx>0?1:-1;else b.face=p.face;
+  b.x+=Math.max(-2.2,Math.min(2.2,dx));
+  if(tg.g){b.y+=((tg.y)-b.y)*.35;b.air=Math.abs(tg.y-b.y)>2}else{b.y+=(tg.y-b.y)*.35;b.air=true}
+  if(!p.onGround)b.air=true;
+  if(Math.abs(b.x-p.x)>120){b.x=p.x-p.face*14;b.y=p.y}}
+
+/* ---------- render ---------- */
+const petals=Array.from({length:22},(_,i)=>({x:Math.random()*W,y:Math.random()*H,vx:-.15-Math.random()*.25,vy:.15+Math.random()*.25,s:Math.random()<.4?2:1}));
+function makeTile(v){const c=document.createElement("canvas");c.width=16;c.height=H-GROUND+4;const g=c.getContext("2d"),T0=4,h=(a,b)=>hash(v*16+a,b);
+  const band=["#8b5a40","#734331","#5d342c","#4a2a2b","#371d25"],cut=[9,20,34,52];
+  for(let x=0;x<16;x++)for(let y=0;y<c.height-T0;y++){let b=0;const off=(h(x,3)*3|0)+((Math.sin((v*16+x)*.6)*2)|0);while(b<4&&y>cut[b]+off)b++;g.fillStyle=band[b];g.fillRect(x,y+T0,1,1)}
+  for(let k=0;k<5;k++){const px=(h(k,5)*12)|0,py=T0+10+((h(k,6)*58)|0),big=h(k,7)>.6;
+    g.fillStyle="#2c1820";g.fillRect(px,py+2,big?4:3,1);g.fillStyle=big?"#a98a7a":"#8f6c5a";g.fillRect(px,py,big?4:3,2);g.fillStyle="#d2b5a0";g.fillRect(px,py,1,1)}
+  if(h(0,11)>.5){g.fillStyle="#4a2a22";let rx=(h(0,12)*14)|0;for(let y=T0+6;y<T0+16;y++){g.fillRect(rx,y,1,1);if(h(y,13)>.6)rx+=h(y,14)>.5?1:-1}}
+  for(let x=0;x<16;x++){const d=1+((h(x,15)*3)|0);
+    g.fillStyle="#3d9147";g.fillRect(x,T0+3,1,1+d);g.fillStyle="#5cc04e";g.fillRect(x,T0,1,3);g.fillStyle="#8fe07a";g.fillRect(x,T0,1,1);
+    if(h(x,16)>.5){g.fillStyle=h(x,17)>.5?"#6fd35e":"#4fae4a";const bl=1+((h(x,18)*3)|0);g.fillRect(x,T0-bl,1,bl)}}
+  if(h(1,20)>.55){const fx=2+((h(1,21)*11)|0),col=["#ff7fb0","#fff4f8","#ffd24a"][(h(1,22)*3)|0];g.fillStyle="#3d9147";g.fillRect(fx,T0-2,1,2);g.fillStyle=col;g.fillRect(fx-1,T0-4,3,2);g.fillStyle="#ffd24a";g.fillRect(fx,T0-4,1,1)}
+  return c}
+const tiles=Array.from({length:10},(_,i)=>makeTile(i+1));
+function drawGroundTile(c,cam){ctx.drawImage(tiles[(hash(c,77)*10)|0],c*TS-cam,GROUND-4)}
+function drawLamp(x,t){const y=GROUND;ctx.fillStyle="#5b3a29";ctx.fillRect(x,y-30,2,30);ctx.fillRect(x-1,y-32,4,2);
+  ctx.fillStyle="#3a2018";ctx.fillRect(x-3,y-39,8,8);ctx.fillStyle="#ffd479";ctx.fillRect(x-2,y-38,6,6);
+  ctx.globalAlpha=.16+Math.sin(t*.004)*.04;ctx.fillStyle="#ffe6a0";ctx.beginPath();ctx.arc(x+1,y-35,13,0,7);ctx.fill();ctx.globalAlpha=1}
+function makeBike(){const c=document.createElement("canvas");c.width=36;c.height=20;const g=c.getContext("2d");
+  const line=(x0,y0,x1,y1,col)=>{g.fillStyle=col;const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));for(let i=0;i<=n;i++)g.fillRect(Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),1,1)};
+  const wheel=(cx,cy)=>{g.fillStyle="#141418";disc(g,cx,cy,5);g.fillStyle="#b9bec6";disc(g,cx,cy,4);g.fillStyle="#26262c";disc(g,cx,cy,3);
+    line(cx-3,cy,cx+3,cy,"#8c929a");line(cx,cy-3,cx,cy+3,"#8c929a");line(cx-2,cy-2,cx+2,cy+2,"#6c727a");line(cx-2,cy+2,cx+2,cy-2,"#6c727a");g.fillStyle="#e4e7eb";g.fillRect(cx,cy,1,1)};
+  wheel(7,14);wheel(28,14);
+  line(7,14,10,4,"#c8ccd2");line(8,14,11,4,"#8c929a");
+  line(11,8,26,8,"#1c1c22");line(26,8,28,14,"#1c1c22");line(14,13,28,14,"#1c1c22");line(25,6,32,12,"#1c1c22");
+  g.fillStyle="#5c6068";g.fillRect(13,9,8,5);g.fillStyle="#8a8e96";for(let x=13;x<21;x+=2)g.fillRect(x,9,1,4);g.fillStyle="#3a3c42";g.fillRect(13,13,8,1);
+  line(19,13,33,11,"#d6d9de");line(20,14,33,12,"#7a7e86");
+  g.fillStyle="#a01820";g.fillRect(12,8,8,1);
+  g.fillStyle="#d8262f";g.fillRect(12,4,6,1);g.fillRect(11,5,9,3);g.fillStyle="#ff6b6b";g.fillRect(12,5,4,1);g.fillStyle="#fff";g.fillRect(17,5,1,3);
+  g.fillStyle="#5a3220";g.fillRect(20,6,7,2);g.fillStyle="#7a4a30";g.fillRect(20,6,6,1);
+  g.fillStyle="#d8262f";g.fillRect(27,4,3,3);g.fillRect(26,5,1,2);g.fillStyle="#a01820";g.fillRect(27,6,3,1);
+  g.fillStyle="#1c1c22";g.fillRect(8,4,4,1);g.fillRect(8,5,1,1);
+  g.fillStyle="#c8ccd2";disc(g,6,6,2);g.fillStyle="#fff4c0";g.fillRect(5,5,2,2);
+  g.fillStyle="#ff3a3a";g.fillRect(31,6,1,1);return c}
+const sprBike=makeBike(),BIKEX=CAKEX+46;
+function drawBike(cam,t){const x=BIKEX-cam;if(x<-40||x>W+10)return;ctx.globalAlpha=.25+.08*Math.sin(t*.004);ctx.fillStyle="#fff1b0";
+  ctx.beginPath();ctx.moveTo(x+5,GROUND-14);ctx.lineTo(x-26,GROUND-20);ctx.lineTo(x-26,GROUND-6);ctx.fill();ctx.globalAlpha=1;
+  ctx.fillStyle="rgba(20,6,24,.35)";ctx.fillRect(x+2,GROUND-1,32,2);ctx.drawImage(sprBike,x|0,GROUND-20)}
+function drawCake(x,t){const y=GROUND;ctx.fillStyle="#fff";ctx.fillRect(x-1,y-2,18,2);
+  ctx.fillStyle="#ffd1e4";ctx.fillRect(x,y-8,16,6);ctx.fillStyle="#ff8fbd";ctx.fillRect(x,y-8,16,2);ctx.fillStyle="#fff";ctx.fillRect(x+2,y-5,2,1);ctx.fillRect(x+8,y-5,2,1);ctx.fillRect(x+12,y-5,2,1);
+  ctx.fillStyle="#ffd1e4";ctx.fillRect(x+3,y-13,10,5);ctx.fillStyle="#ff8fbd";ctx.fillRect(x+3,y-13,10,2);
+  ctx.fillStyle="#7ec8ff";ctx.fillRect(x+7,y-17,2,4);if(cakeBlown){ctx.globalAlpha=.5;ctx.fillStyle="#ddd";const k=(t>>6)%10;ctx.fillRect(x+7+(k>5?1:0),y-20-k,1,2);ctx.globalAlpha=1;return}
+  ctx.fillStyle=(t>>7)%2?"#ffd24a":"#ff9f4a";ctx.fillRect(x+7,y-20,2,3);ctx.globalAlpha=.25;ctx.fillStyle="#ffe6a0";ctx.beginPath();ctx.arc(x+8,y-18,7,0,7);ctx.fill();ctx.globalAlpha=1;
+  if(state==="play"&&nearCake()&&!modalOpen){ctx.fillStyle="#2b2150";ctx.fillRect(x+3,y-38,10,10);ctx.fillStyle="#ffd24a";ctx.font="bold 8px monospace";ctx.textAlign="center";ctx.fillText("E",x+8,y-30)}}
+function drawArch(cam,t){const cx=ARCH-cam,top=GROUND-46;
+  const glow=.22+Math.sin(t*.003)*.06+(collected>=chests.length?.2:0);
+  ctx.globalAlpha=glow;ctx.fillStyle="#fff";ctx.fillRect(cx-16,top-14,32,60);ctx.globalAlpha=1;
+  ctx.fillStyle="#f5e6f0";ctx.fillRect(cx-19,top,4,46);ctx.fillRect(cx+15,top,4,46);
+  for(let a=0;a<=24;a++){const ang=Math.PI*(1-a/24);const x=cx+Math.cos(ang)*17,y=top-Math.sin(ang)*17;ctx.fillStyle=a%3===0?"#ff8fbd":"#f5e6f0";ctx.fillRect(x-1.5|0,y-1.5|0,4,4)}
+  ctx.fillStyle="#6ccf5f";for(let i=0;i<8;i++){ctx.fillRect(cx-19,top+i*6,1,3);ctx.fillRect(cx+18,top+3+i*6,1,3)}
+  ctx.fillStyle="#ff4f87";ctx.fillRect(cx-1,top-19,3,3)}
+function drawChest(c,cam,t){const x=c.px-cam,y=c.py;
+  if(!c.opened){ctx.drawImage(sprChest,x|0,y-12);
+    const bob=Math.sin(t*.005+c.px)*1.5;ctx.drawImage(sprHeart,(x+3.5)|0,(y-21+bob)|0);
+    if((t>>8)%3===0){ctx.fillStyle="#fff";ctx.fillRect(x-2,y-14,1,1);ctx.fillRect(x+15,y-9,1,1)}}
+  else{c.t++;ctx.drawImage(sprChest,0,4,14,8,x|0,y-8,14,8);ctx.fillStyle="#3b2447";ctx.fillRect(x+1,y-8,12,2);
+    ctx.drawImage(sprChest,0,0,14,4,x|0,y-15,14,4);
+    ctx.globalAlpha=.4;ctx.fillStyle="#fff1b0";ctx.fillRect(x+3,y-26,8,12);ctx.globalAlpha=.18;ctx.fillRect(x+1,y-32,12,18);ctx.globalAlpha=1}}
+function render(t){
+  const cam=state==="menu"?((t*.012)%(WORLD-W)|0):Math.max(0,Math.min(WORLD-W,Math.round(player.x-70)));
+  ctx.clearRect(0,0,W,H);ctx.drawImage(sky,0,0);
+  drawBackdrop(cam,t);
+  const cl=[[20,40,0],[90,58,1],[140,30,2],[60,80,3],[200,20,0],[260,66,2]];
+  cl.forEach((c,i)=>{const w=clouds[c[2]].width;const x=((c[0]-cam*.2-t*.004*(1+i%3))%360+360)%360-60;ctx.drawImage(clouds[c[2]],x|0,c[1]+40)});
+  drawMountains(cam,t);
+  for(let i=0;i<26;i++){const x=(((i*37+t*.01*(1+i%3)-cam*.3)%220)+220)%220-10,y=226+(i*13)%90;if(y<GROUND){ctx.fillStyle="rgba(255,200,170,.3)";ctx.fillRect(x|0,y,3+(i%3)*2,1)}}
+  decorTrees.forEach(([tx,k])=>{const im=smallTrees[k],x=tx*TS-cam-im.width/2;if(x>-60&&x<W+10)ctx.drawImage(im,x|0,GROUND-im.height+3)});
+  lamps.forEach(l=>{const x=l*TS-cam;if(x>-10&&x<W+10)drawLamp(x,t)});
+  {const x=TREEX-cam-bigTree.width/2;if(x>-140&&x<W+10){ctx.drawImage(bigTree,x|0,GROUND-bigTree.height+3);
+    const sx=TREEX-cam-48;ctx.fillStyle="#5b3a29";ctx.fillRect(sx+8,GROUND-12,2,12);ctx.fillRect(sx+30,GROUND-12,2,12);ctx.fillStyle="#b07a4a";ctx.fillRect(sx,GROUND-26,40,14);ctx.fillStyle="#d9a066";ctx.fillRect(sx,GROUND-26,40,2);ctx.fillStyle="#fff";ctx.font="bold 5px monospace";ctx.textAlign="center";ctx.fillText("HAPPY",sx+20,GROUND-19);ctx.fillText("BIRTHDAY ♥",sx+20,GROUND-14)}}
+  drawBike(cam,t);
+  if(CAKEX-cam>-20&&CAKEX-cam<W+10)drawCake(CAKEX-cam,t);
+  if(ARCH-cam>-40&&ARCH-cam<W+40)drawArch(cam,t);
+  // moci in world
+  if(boy&&state!=="menu"){const b=boy,x=Math.round(b.x-cam-2),y=Math.round(b.y);if(x>-20&&x<W+20){
+    const air=b.follow?b.air:b.y<GROUND-21;const img=air?meSpr.jump:(b.anim>0?((b.anim|0)%2?meSpr.walkA:meSpr.walkB):meSpr.idle);
+    ctx.save();if(b.face<0){ctx.translate(x+12,y);ctx.scale(-1,1);ctx.drawImage(img,0,0)}else ctx.drawImage(img,x,y);ctx.restore();
+    if(!b.follow&&(t>>9)%2)ctx.drawImage(sprHeart,x+2,y-10)}}
+  CONFIG.capys.forEach((c,i)=>{const x=c.x*TS-cam;if(x<-20||x>W+4)return;const br=((t*.003+i)|0)%2,im=c.orange?sprCapyO:c.sleep?sprCapyZ:sprCapy;
+    ctx.drawImage(im,x|0,GROUND-11+(c.sleep?br:0));
+    if(c.sleep){ctx.fillStyle="#fff";ctx.font="bold 6px monospace";ctx.textAlign="left";const z=(t*.02%12)|0;ctx.globalAlpha=1-z/12;ctx.fillText("z",x+4+z/3,GROUND-14-z);ctx.globalAlpha=1}
+    else if(player&&state!=="menu"&&Math.abs(player.x-(c.x*TS+8))<22){ctx.drawImage(sprHeart,(x+5)|0,GROUND-20-((t>>8)%2))}});
+  [[8*TS,GROUND],[CAKEX-24,GROUND]].forEach(([mx,my],i)=>{const x=mx-cam;if(x>-20&&x<W+20){const b=Math.abs(Math.sin(t*.004+i*2))*3|0;ctx.drawImage(sprMoci,x|0,my-12-b)}});
+  // platforms
+  plats.forEach(p=>{const x=p.x*TS-cam,w=p.w*TS;if(x>-w&&x<W){ctx.fillStyle="#6d4630";ctx.fillRect(x,p.r*TS+3,w,3);ctx.fillStyle="#b07a4a";ctx.fillRect(x,p.r*TS,w,4);ctx.fillStyle="#d9a066";ctx.fillRect(x,p.r*TS,w,1);
+    ctx.fillStyle="#6ccf5f";for(let k=0;k<w;k+=5)ctx.fillRect(x+k,p.r*TS-1,2,1);ctx.fillStyle="#ff7fb0";ctx.fillRect(x+3,p.r*TS-2,1,1);ctx.fillRect(x+w-5,p.r*TS-2,1,1)}});
+  // ground
+  segs.forEach(s=>{const c0=Math.max(s[0],Math.floor(cam/TS)),c1=Math.min(s[1]-1,Math.floor((cam+W)/TS));for(let c=c0;c<=c1;c++)drawGroundTile(c,cam);
+    const lx=s[0]*TS-cam,rx=s[1]*TS-cam;ctx.fillStyle="rgba(20,6,24,.45)";ctx.fillRect(lx,GROUND+5,2,H);ctx.fillRect(rx-2,GROUND+5,2,H);ctx.fillStyle="#3d9147";ctx.fillRect(lx-1,GROUND+1,1,4);ctx.fillRect(rx,GROUND+1,1,4)});
+  if(chests)chests.forEach(c=>{const x=c.px-cam;if(x>-20&&x<W+10)drawChest(c,cam,t)});
+  // player
+  if(state!=="menu"&&player){const p=player,sp=playerSprites(outfit);
+    const img=!p.onGround?sp.jump:(Math.abs(p.vx)>.4?((p.anim|0)%2?sp.walkA:sp.walkB):sp.idle);
+    if(!(invul>0&&(t>>6)%2)){ctx.save();const px=Math.round(p.x-cam-2),py=Math.round(p.y);
+      if(p.face<0){ctx.translate(px+12,py);ctx.scale(-1,1);ctx.drawImage(img,0,0)}else ctx.drawImage(img,px,py);ctx.restore()}
+    const near=nearChest();if(near){const x=near.px-cam+7,y=near.py-(near.opened?36:30);ctx.fillStyle="#2b2150";ctx.fillRect(x-5,y-8,10,10);ctx.fillStyle="#ffd24a";ctx.font="bold 8px monospace";ctx.textAlign="center";ctx.fillText("E",x,y)}}
+  // petals
+  petals.forEach(q=>{q.x+=q.vx;q.y+=q.vy;if(q.y>H){q.y=-2;q.x=Math.random()*W*1.3}if(q.x<-2)q.x=W+2;ctx.fillStyle="#ffb7d5";ctx.fillRect(q.x|0,q.y|0,q.s,q.s)});
+}
+
+/* ---------- loop ---------- */
+let last=performance.now(),acc=0;
+function frame(t){const dt=Math.min(100,t-last);last=t;
+  if(state==="play"&&!paused&&!modalOpen){acc+=dt;while(acc>=16.667){update();acc-=16.667}playTime+=dt/1000}else acc=0;
+  render(t);requestAnimationFrame(frame)}
+resetGame();showStart();requestAnimationFrame(frame);
+if(/[?&]debug\b/.test(location.search))window.__dbg={get state(){return state},get player(){return player},get chests(){return chests},interact,endGame,startGame};
+})();
+</script>
+</body>
+</html>
